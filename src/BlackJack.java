@@ -1,5 +1,3 @@
-import cards.Card;
-
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
@@ -7,6 +5,54 @@ import java.util.Random;
 import javax.swing.*;
 
 public class BlackJack {
+
+    private class Card {
+
+        String value;
+        String type;
+
+        Card(String value, String type) {
+            this.value = value;
+            this.type = type;
+        }
+
+        public String toString() {
+            return value + "-" + type;
+        }
+
+        public int getValue(boolean dealer) {
+            if ("AJQK".contains(value)) { //A J Q K
+                if (value.equals("A")) {
+                    if (dealer) {
+                        int theoreticalSum = dealerSum + 11;
+                        if (theoreticalSum > 21) {
+                            return 1;
+                        }
+                        return 11;
+                    } else {
+                        int theoreticalSum = playerSum + 11;
+                        if (theoreticalSum > 21) {
+                            return 1;
+                        }
+                        return 11;
+                    }
+                }
+                return 10;
+            }
+            return Integer.parseInt(value); //2-10
+        }
+
+        public boolean isAce() {
+            return value.equals("A");
+        }
+
+        public String getImagePath() {
+            return "./cards/" + toString() + ".png";
+        }
+    }
+
+
+
 
 
     ArrayList<Card> deck;
@@ -34,7 +80,10 @@ public class BlackJack {
     JPanel gamePanel = new JPanel() {
         @Override
         public void paintComponent(Graphics g) {
+
             super.paintComponent(g);
+            g.setFont(new Font("Arial", Font.PLAIN, 30));
+            g.setColor(Color.white);
             
             try {
                 //draw hidden card
@@ -57,6 +106,9 @@ public class BlackJack {
                     Image cardImg = new ImageIcon(getClass().getResource(card.getImagePath())).getImage();
                     g.drawImage(cardImg, 20 + (cardWidth + 5)*i, 320, cardWidth, cardHeight, null);
                 }
+
+                String playerSumMessage = "Player Sum: " + Integer.toString(playerSum);
+                g.drawString(playerSumMessage, 20, 310);
 
                 if (!stayButton.isEnabled()) {
                     dealerSum = reduceDealerAce();
@@ -83,9 +135,18 @@ public class BlackJack {
                         message = "You Lose!";
                     }
 
-                    g.setFont(new Font("Arial", Font.PLAIN, 30));
-                    g.setColor(Color.white);
-                    g.drawString(message, 220, 250);
+
+                    g.drawString(message, 220, 260);
+                    String dealerSumMessage = "Dealer Sum: " + Integer.toString(dealerSum);
+                    g.drawString(dealerSumMessage, 20, 210);
+
+
+
+
+
+
+
+
                 }
 
             } catch (Exception e) {
@@ -96,6 +157,7 @@ public class BlackJack {
     JPanel buttonPanel = new JPanel();
     JButton hitButton = new JButton("Hit");
     JButton stayButton = new JButton("Stay");
+    JButton newGameButton = new JButton("New Game");
 
     BlackJack() {
         startGame();
@@ -114,16 +176,23 @@ public class BlackJack {
         buttonPanel.add(hitButton);
         stayButton.setFocusable(false);
         buttonPanel.add(stayButton);
+        newGameButton.setFocusable(false);
+        buttonPanel.add(newGameButton);
+        newGameButton.setEnabled(false);
         frame.add(buttonPanel, BorderLayout.SOUTH);
         
         hitButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                Card card = deck.remove(deck.size()-1);
-                playerSum += card.getValue();
+                Card card = deck.removeLast();
+                playerSum += card.getValue(false);
                 playerAceCount += card.isAce() ? 1 : 0;
                 playerHand.add(card);
                 if (reducePlayerAce() > 21) { //A + 2 + J --> 1 + 2 + J
                     hitButton.setEnabled(false); 
+                }
+                //If you bust, then you should lose straight away
+                if (playerSum > 21) {
+                    stayButton.doClick();
                 }
                 gamePanel.repaint();
             }
@@ -133,10 +202,11 @@ public class BlackJack {
             public void actionPerformed(ActionEvent e) {
                 hitButton.setEnabled(false);
                 stayButton.setEnabled(false);
+                newGameButton.setEnabled(true);
 
                 while (dealerSum < 17) {
-                    Card card = deck.remove(deck.size()-1);
-                    dealerSum += card.getValue();
+                    Card card = deck.removeLast();
+                    dealerSum += card.getValue(true);
                     dealerAceCount += card.isAce() ? 1 : 0;
                     dealerHand.add(card);
                 }
@@ -144,6 +214,17 @@ public class BlackJack {
             }
         });
 
+        newGameButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                stayButton.setEnabled(true);
+                hitButton.setEnabled(true);
+                startGame();
+                gamePanel.repaint();
+
+
+            }
+        });
         gamePanel.repaint();
     }
 
@@ -157,12 +238,12 @@ public class BlackJack {
         dealerSum = 0;
         dealerAceCount = 0;
 
-        hiddenCard = deck.remove(deck.size()-1); //remove card at last index
-        dealerSum += hiddenCard.getValue();
+        hiddenCard = deck.removeLast();
+        dealerSum += hiddenCard.getValue(true);
         dealerAceCount += hiddenCard.isAce() ? 1 : 0;
 
-        Card card = deck.remove(deck.size()-1);
-        dealerSum += card.getValue();
+        Card card = deck.removeLast();
+        dealerSum += card.getValue(true);
         dealerAceCount += card.isAce() ? 1 : 0;
         dealerHand.add(card);
 
@@ -179,8 +260,8 @@ public class BlackJack {
         playerAceCount = 0;
 
         for (int i = 0; i < 2; i++) {
-            card = deck.remove(deck.size()-1);
-            playerSum += card.getValue();
+            card = deck.removeLast();
+            playerSum += card.getValue(false);
             playerAceCount += card.isAce() ? 1 : 0;
             playerHand.add(card);
         }
@@ -196,9 +277,9 @@ public class BlackJack {
         String[] values = {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"};
         String[] types = {"C", "D", "H", "S"};
 
-        for (int i = 0; i < types.length; i++) {
-            for (int j = 0; j < values.length; j++) {
-                Card card = new Card(values[j], types[i]);
+        for (String type : types) {
+            for (String value : values) {
+                Card card = new Card(value, type);
                 deck.add(card);
             }
         }

@@ -1,3 +1,5 @@
+import cards.Card;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
@@ -5,37 +7,7 @@ import java.util.Random;
 import javax.swing.*;
 
 public class BlackJack {
-    private class Card {
-        String value;
-        String type;
 
-        Card(String value, String type) {
-            this.value = value;
-            this.type = type;
-        }
-
-        public String toString() {
-            return value + "-" + type;
-        }
-
-        public int getValue() {
-            if ("AJQK".contains(value)) { //A J Q K
-                if (value == "A") {
-                    return 11;
-                }
-                return 10;
-            }
-            return Integer.parseInt(value); //2-10
-        }
-
-        public boolean isAce() {
-            return value == "A";
-        }
-
-        public String getImagePath() {
-            return "./cards/" + toString() + ".png";
-        }
-    }
 
     ArrayList<Card> deck;
     Random random = new Random(); //shuffle deck
